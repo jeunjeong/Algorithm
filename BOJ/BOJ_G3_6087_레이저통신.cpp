@@ -1,99 +1,74 @@
 #include <iostream>
 #include <queue>
-#include <vector>
-#include <cstring>
+
+#define endl '\n'
+#define MAX 100
 using namespace std;
 
-struct Pos {
-    int row;
-    int col;
-    int dir;
-    int mirror;
-};
-int R, C;
-pair<int, int> start, finish;
-int dr[4] = { -1,1,0,0 };
-int dc[4] = { 0,0,-1,1 };
-char map[101][101];
-int visit[101][101];
+int W, H;
+int d_row[] = {-1, 0, 1, 0};
+int d_col[] = { 0, 1, 0,-1};
+char map[MAX][MAX];
+int visit[MAX][MAX];
 
-void input();
-void solve();
-void bfs();
+pair<int, int> Start, End;
 
-int main() {
-    ios::sync_with_stdio(false);
-    cin.tie(0);
-    cout.tie(0);
-    solve();
+int bfs();
+
+int main(void){
+    cin >> W >> H;
+    bool C_cnt=false;
+    for(int i = 0; i < H; ++i){
+        for(int j = 0; j < W; ++j){
+            cin >> map[i][j];
+            if(map[i][j] == 'C'){
+                if(!C_cnt){
+                    C_cnt = true;
+                    Start = {i,j};
+                }else{
+                    End = {i,j};
+                }
+            }
+            visit[i][j] = 10000;
+        }
+    }
+//    cout << "start : " << Start.first << ", " << Start.second << endl;
+//    cout << "end : " << End.first << ", " << End.second << endl; 
+    int res = bfs();
+    cout << res;
     return 0;
 }
 
-void input() {
-    bool flag = false;
-    cin >> C >> R;
-    for (int r = 0; r < R; ++r) {
-        for (int c = 0; c < C; ++c) {
-            cin >> map[r][c];
-            if (map[r][c] == 'C') {
-                if (!flag) {
-                    start = { r,c };
-                    flag = true;
-                }
-                else finish = { r,c };
-                map[r][c] = '.';
-            }
-        }
+int bfs(){
+    //row, col, dir, cnt
+    queue<pair<pair<int,int>, pair<int, int>>> que;
+    for(int i = 0; i < 4; ++i){ 
+        que.push({Start, {i,0}});
     }
-}
-
-void solve() {
-    fill(&visit[0][0], &visit[100][100], 10000);
-    input();
-    bfs();
-    cout << visit[finish.first][finish.second];
-}
-
-void bfs() {
-    queue<Pos> Q;
-    for (int d = 0; d < 4; ++d) {
-        int nr = start.first + dr[d];
-        int nc = start.second + dc[d];
-        if (nr == finish.first && nc == finish.second) {
-            visit[finish.first][finish.second] = 0;
-            return;
-        }
-        else if (0 <= nr && nr < R && 0 <= nc && nc < C && map[nr][nc] == '.') {
-            visit[start.first][start.second] = -1;
-            Q.push({ nr,nc,d,0 }); 
-        }
-    }
-    while (!Q.empty()) {
-        Pos x = Q.front();
-        Q.pop();
-        for (int d = 0; d < 4; ++d) {
-            if (x.dir == 0 && d == 1)continue;
-            else if (x.dir == 1 && d == 0) continue;
-            else if (x.dir == 2 && d == 3) continue;
-            else if (x.dir == 3 && d == 2) continue;
-            int nr = x.row + dr[d];
-            int nc = x.col + dc[d];
-            if (0 <= nr && nr < R && 0 <= nc && nc < C && map[nr][nc] == '.') {
-                //cout << nr << ":" << nc << "&&" << x.dir << ":" << d << "&& mirror" << visit[nr][nc] << ":" << x.mirror << '\n';
-                if (visit[nr][nc] >= x.mirror && (x.dir == 0 || x.dir == 1) && (d == 0 || d == 1)) { //¹æÇâÀ» ¾È²ªÀ»¶§´Â
-                    visit[nr][nc] = x.mirror;
-                    Q.push({ nr, nc, d, x.mirror }); 
+    while(!que.empty()){
+        pair<pair<int,int>, pair<int, int>> x = que.front();
+        que.pop();
+        int row = x.first.first;
+        int col = x.first.second;
+        int dir = x.second.first;
+        int cnt = x.second.second;
+        for(int i = 0; i < 4; ++i){
+            int nr = row + d_row[i];
+            int nc = col + d_col[i];
+            //cout << nr << " : " << nc << endl;
+            if(nr < 0 || nr >= H || nc < 0 || nc >= W || map[nr][nc] == '*') continue;
+            if(dir != i){ //ë°©í–¥ì „í™˜ì„ í–ˆì„ ë•Œ
+                if(visit[nr][nc] >= cnt+1){
+                    que.push({{nr,nc},{i,cnt+1}});
+                    visit[nr][nc] = cnt+1;
                 }
-                else if (visit[nr][nc] > x.mirror && (x.dir == 2 || x.dir == 3) && (d == 2 || d == 3)) {
-                    visit[nr][nc] = x.mirror;
-                    Q.push({ nr, nc, d, x.mirror });
-                }
-                else if (visit[nr][nc] > x.mirror) { //¹æÇâÀ»²ªÀ»¶§´Â?
-                    visit[nr][nc] = x.mirror+1;
-                    Q.push({ nr, nc, d, x.mirror +1});
+            }else{ //ë°©í–¥ì „í™˜ì„ ì•ˆí–ˆì„ ë•Œ
+                if(visit[nr][nc] >= cnt){
+                    que.push({{nr,nc},{i,cnt}});
+                    visit[nr][nc] = cnt;
                 }
             }
         }
     }
-    return;
+    return visit[End.first][End.second];
 }
